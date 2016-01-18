@@ -104,7 +104,7 @@ extern int enable_json;
 int disable_auto_accept;
 int msg_num_mode;
 int disable_colors;
-int alert_sound;
+extern int alert_sound;
 extern int binlog_read;
 
 int safe_quit;
@@ -560,7 +560,10 @@ void set_prompt (const char *s) {
 }
 
 void update_prompt (void) {
-  if (readline_disabled) { return; }
+  if (readline_disabled) {
+    fflush (stdout);
+    return;
+  }
   if (read_one_string) { return; }
   print_start ();
   set_prompt (get_default_prompt ());
@@ -2132,7 +2135,6 @@ void print_string_gw (struct tgl_state *TLSR, void *extra, int success, const ch
   }
   if (!success) { print_fail (ev); return; }
   mprint_start (ev);
-  mprint_start (ev);
   if (!enable_json) {
     mprintf (ev, "%s\n", name);
   } else {
@@ -2856,13 +2858,14 @@ void user_status_upd (struct tgl_state *TLS, struct tgl_user *U) {
 
 void on_login (struct tgl_state *TLS);
 void on_started (struct tgl_state *TLS);
-void do_get_string (struct tgl_state *TLS, const char *prompt, int flags, void (*cb)(struct tgl_state *, const char *, void *), void *arg);
+void do_get_values (struct tgl_state *TLS, enum tgl_value_type type, const char *prompt, int num_values,
+          void (*callback)(struct tgl_state *TLS, const char *string[], void *arg), void *arg);
 
 struct tgl_update_callback upd_cb = {
   .new_msg = print_message_gw,
   .marked_read = mark_read_upd,
   .logprintf = logprintf,
-  .get_string = do_get_string,
+  .get_values = do_get_values,
   .logged_in = on_login,
   .started = on_started,
   .type_notification = type_notification_upd,
@@ -3163,7 +3166,7 @@ int readline_active;
 
 int saved_point;
 char *saved_line;
-int prompt_was;
+static int prompt_was;
 
 
 void deactivate_readline (void) {
